@@ -1,6 +1,6 @@
 const contractPerNetwork = {
   mainnet: ' ',
-  testnet: 'nft-contract-aman.testnet',
+  testnet: 'nfts-contract-aman.testnet',
 };
 
 // Chains for EVM Wallets 

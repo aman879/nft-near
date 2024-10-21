@@ -2,7 +2,7 @@ import React from "react";
 import CardList from "../CardList/CardList";
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-const Explore = ({ nfts, isConnected, isLoading }) => {
+const Explore = ({ nfts, isConnected, isLoading, deleteNFT }) => {
   console.log(nfts, isConnected);
 
   return (
@@ -11,7 +11,7 @@ const Explore = ({ nfts, isConnected, isLoading }) => {
         isLoading ? (
           <p className="text-white h4">Loading...</p>
         ) : (
-          <CardList userNFTs={nfts} />
+          <CardList userNFTs={nfts} deleteNFT={deleteNFT}/>
         )
       ) : (
         <div className="text-center">

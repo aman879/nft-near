@@ -38,25 +38,17 @@ const IndexPage = () => {
           if (connected && signedAccountId) { 
             try {
               setIsLoading(true);
-              const count = await wallet.viewMethod({contractId: CONTARCT, method: "get_total_count"});
-              console.log(count)
-    
+              const count = await wallet.viewMethod({contractId: CONTARCT, method: "get_total_count"});    
               const nfts = [];
     
               for(let i =0; i<count; i++ ){
                 const i_string = String(i);
                 const tx = await wallet.viewMethod({contractId: CONTARCT, method: "get_nft", args: {index: i_string}});
-                console.log(tx.uri)
-                const data = await pinata.gateways.get(`https://beige-sophisticated-baboon-74.mypinata.cloud/ipfs/${tx.uri}`);
-    
-                const mergedNFTData = {
-                  ...(typeof tx === 'object' ? tx : {}),
-                  ...(typeof data.data === 'object' ? data.data : {}),
-                };
-                nfts.push(mergedNFTData);
+                console.log(tx)
+                if(tx.data) {
+                  nfts.push(tx);
+                }
               }
-    
-              
               setNfts(nfts);
               setShouldFetchNfts(false);
               setIsLoading(false);
@@ -76,17 +68,25 @@ const IndexPage = () => {
     setRoute(route);
   };
 
-  const mintNFTs = async (_uri) => {
+  const mintNFTs = async (tokenId, title, description, uri, price) => {
     if(!signedAccountId) return;
     try {
-        console.log("Minting NFT with URI:", _uri);
 
-        // Ensure _uri is defined
-        if (typeof _uri !== 'string') {
-            throw new Error('URI must be a string');
-        }
-        const tx = await wallet.callMethod({contractId: CONTARCT, method: 'mint', args: {uri: _uri}});
-        // const tx = await wallet.viewMethod({contractId: CONTARCT, method: "get_nft", args: {index: '0'}});
+        const depositAmount = BigInt(price * 1000000000000000000000000);
+
+        const tx = await wallet.callMethod({
+            contractId: CONTARCT,
+            method: 'mint',
+            args: {
+                token_id: tokenId,
+                token_metadata: {
+                    "title": title,
+                    "description": description,
+                    "media": `https://beige-sophisticated-baboon-74.mypinata.cloud/ipfs/${uri}`
+                }
+            },
+            deposit: depositAmount.toString()
+        });
         toast.success("NFT minted successfully", {
             position: "top-center"
           });
@@ -100,7 +100,7 @@ const IndexPage = () => {
     }
   }
 
-  const uploadToPinata = async (file, name, description) => {
+  const uploadToPinata = async (file) => {
     if (!file) {
       throw new Error("File is required");
     }
@@ -110,13 +110,7 @@ const IndexPage = () => {
         position:"top-center"
       })
       const uploadImage = await pinata.upload.file(file);
-      const metadata = await pinata.upload.json({
-        name: name,
-        description: description,
-        video: `https://beige-sophisticated-baboon-74.mypinata.cloud/ipfs/${uploadImage.IpfsHash}`,
-      });
-
-      return metadata.IpfsHash;
+      return uploadImage.IpfsHash;
     } catch (error) {
       console.error("Error uploading to Pinata:", error);
       toast.error("Minting NFT failed.", {
@@ -126,6 +120,31 @@ const IndexPage = () => {
     }
   };
 
+  const deleteNFT = async (id) => {
+    if(!signedAccountId) return;
+    try {
+      const depositAmount = BigInt(1);
+
+        await wallet.callMethod({
+            contractId: CONTARCT,
+            method: 'burn',
+            args: {
+                index: id,
+            },
+            deposit: depositAmount.toString()
+        });
+        toast.success("NFT minted successfully", {
+            position: "top-center"
+          });
+        setShouldFetchNfts(true);
+    } catch (e) {
+        console.log(e)
+        toast.error('Error Deleting NFT:', {
+            position: "top-center"
+          });
+    }
+  }
+
   return (
     <>
         <ToastContainer />
@@ -133,7 +152,7 @@ const IndexPage = () => {
         {route === "home" ? (
                 <Home onRouteChange={onRouteChange}/>
             ) : route === "explore" ? (
-                <Explore nfts={nfts} isConnected={connected} isLoading={isLoading}/>
+                <Explore nfts={nfts} isConnected={connected} isLoading={isLoading} deleteNFT={deleteNFT}/>
             ) : route === "mint" ? (
                 <Mint uploadToPinata={uploadToPinata} mintNFT={mintNFTs} />
             ) : (
