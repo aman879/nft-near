@@ -1,8 +1,7 @@
 import React from "react";
 import Card from "../Card/Card";
 
-const CardList = ({ userNFTs, deleteNFT }) => {
-    console.log(userNFTs);
+const CardList = ({ userNFTs, deleteNFT, address }) => {
     let cardComponents = [];
 
     if (userNFTs) {
@@ -14,6 +13,7 @@ const CardList = ({ userNFTs, deleteNFT }) => {
                 description={nft.data.description}
                 image={nft.data.media}
                 onDelete={() => deleteNFT(nft.id)}
+                address={address}
             />
         ));
     }

@@ -44,8 +44,8 @@ const IndexPage = () => {
               for(let i =0; i<count; i++ ){
                 const i_string = String(i);
                 const tx = await wallet.viewMethod({contractId: CONTARCT, method: "get_nft", args: {index: i_string}});
-                console.log(tx)
                 if(tx.data) {
+                  console.log(tx)
                   nfts.push(tx);
                 }
               }
@@ -68,24 +68,40 @@ const IndexPage = () => {
     setRoute(route);
   };
 
-  const mintNFTs = async (tokenId, title, description, uri, price) => {
+  const mintNFTs = async (title, description, uri) => {
     if(!signedAccountId) return;
     try {
 
-        const depositAmount = BigInt(price * 1000000000000000000000000);
+      const tokenMetadata = {
+        title: title,
+        description: description,
+        media: `https://beige-sophisticated-baboon-74.mypinata.cloud/ipfs/${uri}`,
+      };
 
-        const tx = await wallet.callMethod({
-            contractId: CONTARCT,
-            method: 'mint',
-            args: {
-                token_id: tokenId,
-                token_metadata: {
-                    "title": title,
-                    "description": description,
-                    "media": `https://beige-sophisticated-baboon-74.mypinata.cloud/ipfs/${uri}`
-                }
-            },
-            deposit: depositAmount.toString()
+      const metadataSizeInBytes = new TextEncoder().encode(JSON.stringify(tokenMetadata)).length;
+      console.log(metadataSizeInBytes)
+
+      const coverageFee = Math.ceil(metadataSizeInBytes * 1e19); // 1e19 yoctoNEAR per byte
+      const SMARTCONTARCTSTORAGE = 0.0684 * 1e24;
+      const totalCoverageFee = Math.ceil(coverageFee + SMARTCONTARCTSTORAGE);
+      console.log("total coveragge", totalCoverageFee)
+
+      const depositAmount = BigInt(totalCoverageFee);
+
+        // const depositAmount = BigInt(price * 1000000000000000000000000);
+
+      const tx = await wallet.callMethod({
+          contractId: CONTARCT,
+          method: 'mint',
+          args: {
+              token_id: title,
+              token_metadata: {
+                  "title": title,
+                  "description": description,
+                  "media": `https://beige-sophisticated-baboon-74.mypinata.cloud/ipfs/${uri}`
+              }
+          },
+          deposit: depositAmount.toString()
         });
         toast.success("NFT minted successfully", {
             position: "top-center"
@@ -133,7 +149,7 @@ const IndexPage = () => {
             },
             deposit: depositAmount.toString()
         });
-        toast.success("NFT minted successfully", {
+        toast.success("NFT deleted successfully", {
             position: "top-center"
           });
         setShouldFetchNfts(true);
@@ -152,7 +168,7 @@ const IndexPage = () => {
         {route === "home" ? (
                 <Home onRouteChange={onRouteChange}/>
             ) : route === "explore" ? (
-                <Explore nfts={nfts} isConnected={connected} isLoading={isLoading} deleteNFT={deleteNFT}/>
+                <Explore nfts={nfts} isConnected={connected} isLoading={isLoading} deleteNFT={deleteNFT} address={signedAccountId}/>
             ) : route === "mint" ? (
                 <Mint uploadToPinata={uploadToPinata} mintNFT={mintNFTs} />
             ) : (

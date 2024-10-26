@@ -5,8 +5,6 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 const Mint = ({ uploadToPinata, mintNFT }) => {
     const [file, setFile] = useState(null);
     const [title, setTitle] = useState('');
-    const [tokenId, setTokenId] = useState('');
-    const [price, setPrice] = useState('');
     const [description, setDescription] = useState('');
     const [isMinting, setIsMinting] = useState(false);
 
@@ -25,7 +23,7 @@ const Mint = ({ uploadToPinata, mintNFT }) => {
     };
 
     const handleMint = async () => {
-        if (!file || !title || !description || !tokenId) {
+        if (!file || !title || !description) {
             alert('Please complete all fields');
             return;
         }
@@ -34,7 +32,7 @@ const Mint = ({ uploadToPinata, mintNFT }) => {
 
         try {
             const IpfsHash = await uploadToPinata(file);
-            mintNFT(tokenId, title, description, IpfsHash, price);
+            mintNFT(title, description, IpfsHash);
             clearImage();
         } catch (e) {
             console.log(e);
@@ -63,24 +61,13 @@ const Mint = ({ uploadToPinata, mintNFT }) => {
             )}
 
             <div className="mb-3 w-100" style={{ maxWidth: '400px' }}>
-                <label className="form-label">Token Id:</label>
-                <input
-                    type="text"
-                    className="form-control"
-                    value={tokenId}
-                    onChange={(e) => setTokenId(e.target.value)}
-                    placeholder="Enter Token ID"
-                />
-            </div>
-
-            <div className="mb-3 w-100" style={{ maxWidth: '400px' }}>
                 <label className="form-label">Title:</label>
                 <input
                     type="text"
                     className="form-control"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Enter NFT Title"
+                    placeholder="Enter NFT Title (Must be unique)"
                 />
             </div>
 
@@ -91,17 +78,6 @@ const Mint = ({ uploadToPinata, mintNFT }) => {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Enter NFT Description"
-                />
-            </div>
-            <div className="mb-3 w-100" style={{ maxWidth: '400px' }}>
-                <label className="form-label">Fee:</label>
-                <input
-                    type="number"
-                    className="form-control"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    placeholder="Enter Fee for storage coverage"
-                    step="0.01"
                 />
             </div>
             <button

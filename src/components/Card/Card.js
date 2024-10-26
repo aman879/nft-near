@@ -1,32 +1,36 @@
 import React, { useState, useRef, useEffect } from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-const Card = ({ owner, name, image, description, onDelete }) => {
-  const [showContextMenu, setShowContextMenu] = useState(false);
+const Card = ({ owner, name, image, description, onDelete, address }) => {
+  const [showDeleteButton, setShowDeleteButton] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
+  console.log(address)
   const cardRef = useRef(null);
 
   const handleContextMenu = (e) => {
-    e.preventDefault();
-    setShowContextMenu(true);
+    if (owner === address) {
+      e.preventDefault();
+      setShowDeleteButton(true);
+    }
   };
 
   const handleClickOutside = (e) => {
     if (cardRef.current && !cardRef.current.contains(e.target)) {
-      setShowContextMenu(false);
+      setShowDeleteButton(false);
     }
   };
 
   useEffect(() => {
     document.addEventListener("click", handleClickOutside);
+    document.addEventListener("contextmenu", handleClickOutside);
     return () => {
       document.removeEventListener("click", handleClickOutside);
+      document.removeEventListener("contextmenu", handleClickOutside);
     };
   }, []);
 
   const handleDeleteClick = () => {
-    setShowContextMenu(false);
+    setShowDeleteButton(false);
     setShowDeleteModal(true);
   };
 
@@ -53,9 +57,13 @@ const Card = ({ owner, name, image, description, onDelete }) => {
             flex: 1 1 250px;
             max-width: 250px;
             height: 375px;
-            transition: all 0.2s;
             position: relative;
             cursor: pointer;
+            transition: all 0.2s;
+          }
+
+          .card-blur .card-inner {
+            filter: blur(2px);
           }
 
           .card-inner {
@@ -125,13 +133,16 @@ const Card = ({ owner, name, image, description, onDelete }) => {
             margin-bottom: 10px;
           }
 
-          .context-menu {
+          .delete-btn {
             position: absolute;
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.25);
-            z-index: 1000;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 7px;
+            z-index: 10;
           }
 
           .blur-background {
@@ -177,75 +188,62 @@ const Card = ({ owner, name, image, description, onDelete }) => {
             color: white;
           }
 
-          .delete-btn {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1002;
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 20px;
-            border-radius: 10px;
+          .nft-name {
+            font-weight: bold
           }
         `}
       </style>
 
       <div
-        className="card-container"
+        className={`card-div ${showDeleteButton ? "card-blur" : ""}`}
         onContextMenu={handleContextMenu}
         ref={cardRef}
-        style={{ position: "relative" }}
       >
-        <div className="card-div">
-          <div className="card-inner">
-            <img
-              className="card-img-top"
-              alt="NFT"
-              src={image}
-              style={{ height: "150px", width: "200px" }}
-            />
-            <div className="card-content">
-              <div>
-                <span className="label">Name:</span>
-                <p className="value">{name}</p>
-              </div>
-              <div>
-                <span className="label">Owner:</span>
-                <p className="value">{owner}</p>
-              </div>
-              <div>
-                <span className="label">Description:</span>
-                <p className="value">{description}</p>
-              </div>
+        <div className="card-inner">
+          <img
+            className="card-img-top"
+            alt="NFT"
+            src={image}
+            style={{ height: "150px", width: "200px" }}
+          />
+          <div className="card-content">
+            <div>
+              <span className="label">Name:</span>
+              <p className="value">{name}</p>
+            </div>
+            <div>
+              <span className="label">Owner:</span>
+              <p className="value">{owner}</p>
+            </div>
+            <div>
+              <span className="label">Description:</span>
+              <p className="value">{description}</p>
             </div>
           </div>
         </div>
 
-        {showContextMenu && (
-          <div className="delete-btn">
-            <button className="btn btn-danger" onClick={handleDeleteClick}>Delete</button>
-          </div>
-        )}
-
-        {showDeleteModal && (
-          <div className="blur-background">
-            <div className="delete-modal">
-              <p>Are you sure you want to delete this NFT?</p>
-              <div className="modal-buttons">
-                <button className="modal-button delete-button" onClick={handleDeleteConfirm}>
-                  Delete
-                </button>
-                <button className="modal-button cancel-button" onClick={handleCancel}>
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
+        {showDeleteButton && (
+          <button className="delete-btn" onClick={handleDeleteClick}>
+            Delete
+          </button>
         )}
       </div>
+
+      {showDeleteModal && (
+        <div className="blur-background">
+          <div className="delete-modal">
+            <p>Are you sure you want to delete your <span className="nft-name">{name} NFT</span>?</p>
+            <div className="modal-buttons">
+              <button className="modal-button delete-button" onClick={handleDeleteConfirm}>
+                Delete
+              </button>
+              <button className="modal-button cancel-button" onClick={handleCancel}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
