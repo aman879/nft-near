@@ -68,6 +68,18 @@ const IndexPage = () => {
     setRoute(route);
   };
 
+
+const showToastAndWait = async (message) => {
+  toast.info(message, {
+    position: "top-center",
+    autoClose: 5000,
+  });
+
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+  return true;
+};
+
+
   const mintNFTs = async (title, description, uri) => {
     if(!signedAccountId) return;
     try {
@@ -79,16 +91,14 @@ const IndexPage = () => {
       };
 
       const metadataSizeInBytes = new TextEncoder().encode(JSON.stringify(tokenMetadata)).length;
-      console.log(metadataSizeInBytes)
 
-      const coverageFee = Math.ceil(metadataSizeInBytes * 1e19); // 1e19 yoctoNEAR per byte
+      const coverageFee = Math.ceil(metadataSizeInBytes * 1e19);
       const SMARTCONTARCTSTORAGE = 0.0684 * 1e24;
       const totalCoverageFee = Math.ceil(coverageFee + SMARTCONTARCTSTORAGE);
-      console.log("total coveragge", totalCoverageFee)
+
+      await showToastAndWait(`A fee of ${(metadataSizeInBytes / 100000) + 0.0684} will be deducted`);
 
       const depositAmount = BigInt(totalCoverageFee);
-
-        // const depositAmount = BigInt(price * 1000000000000000000000000);
 
       const tx = await wallet.callMethod({
           contractId: CONTARCT,
@@ -110,7 +120,7 @@ const IndexPage = () => {
         onRouteChange("explore");
     } catch (e) {
         console.log(e)
-        toast.error('Error minting NFT:', {
+        toast.error('Error minting NFT', {
             position: "top-center"
           });
     }
