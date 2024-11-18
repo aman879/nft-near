@@ -23,7 +23,7 @@ export const Navbar = ({onRouteChange}) => {
     <nav className="navbar navbar-expand-lg navbar-dark fixed-top">
       <div className="container-fluid">
         <a className="navbar-brand" onClick={() => onRouteChange("home")}>
-          Ignitus Network
+          Ignitus Networks
         </a>
         <button
           className="navbar-toggler"
