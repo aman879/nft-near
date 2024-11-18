@@ -150,19 +150,28 @@ const showToastAndWait = async (message) => {
     if(!signedAccountId) return;
     try {
       const depositAmount = BigInt(1);
-
-        await wallet.callMethod({
-            contractId: CONTARCT,
-            method: 'burn',
-            args: {
-                index: id,
-            },
-            deposit: depositAmount.toString()
+      const BurnFee = BigInt(1000000000000000000000);
+      
+      await wallet.callMethod({
+        contractId: CONTARCT,
+        method: "pay_burn_fee",
+        args: {
+          index: id,
+        },
+        deposit: BurnFee.toString()
+      })
+      await wallet.callMethod({
+          contractId: CONTARCT,
+          method: 'burn',
+          args: {
+              index: id,
+          },
+          deposit: depositAmount.toString()
+      });
+      toast.success("NFT deleted successfully", {
+          position: "top-center"
         });
-        toast.success("NFT deleted successfully", {
-            position: "top-center"
-          });
-        setShouldFetchNfts(true);
+      setShouldFetchNfts(true);
     } catch (e) {
         console.log(e)
         toast.error('Error Deleting NFT:', {

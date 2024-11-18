@@ -1,20 +1,23 @@
 use near_sdk::store::{Vector, IterableMap};
-use near_sdk::{env, near, AccountId, BorshStorageKey, PanicOnDefault, Promise, PromiseOrValue};
+use near_sdk::{assert_one_yocto, env, near, AccountId, BorshStorageKey, NearToken, PanicOnDefault, Promise, PromiseOrValue};
 use near_sdk::json_types::U64;
 use near_contract_standards::non_fungible_token::metadata::{
     NFTContractMetadata, NonFungibleTokenMetadataProvider, TokenMetadata, NFT_METADATA_SPEC,
 }; 
 
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::borsh::{self, BorshSerialize};
 use near_contract_standards::non_fungible_token::{Token, TokenId};
 use near_contract_standards::non_fungible_token::NonFungibleToken;
 use near_sdk::collections::LazyOption;
+
+const BURN_FEE: u128 = 1_000_000_000_000_000_000_000;
 
 #[near]
 #[derive(BorshStorageKey)]
 pub enum Prefix {
     Vector,
     IterableMap,
+    BurnLog,
 }
 
 #[derive(BorshSerialize, BorshStorageKey)]
@@ -25,6 +28,7 @@ enum StorageKey {
     Enumeration,
     Approval,
 }
+
 #[near(serializers = [json, borsh])]
 #[derive(Clone)]
 pub struct NftData {
@@ -32,6 +36,15 @@ pub struct NftData {
     owner: AccountId,
     token_id: TokenId,
     data: Option<TokenMetadata>
+}
+
+#[near(serializers = [json, borsh])]
+#[derive(Clone)]
+pub struct BurnLog {
+    owner: AccountId,
+    token_id: TokenId,
+    token_name: Option<String>,
+    timestamp: u64,
 }
 
 #[near(contract_state)]
@@ -43,6 +56,8 @@ pub struct Contract {
     nfts: Vector<NftData>,
     metadata: LazyOption<NFTContractMetadata>,
     token_iterable: IterableMap<TokenId, U64>,
+    burn_log: Vector<BurnLog>,
+    paid_burn_fee: Vector<AccountId>,
 }
 
 
@@ -80,15 +95,16 @@ impl Contract {
             item_counter: U64(0),
             nfts: Vector::new(Prefix::Vector),
             metadata: LazyOption::new(StorageKey::Metadata, Some(&metadata)),
-            token_iterable:IterableMap::new(Prefix::IterableMap),   
+            token_iterable: IterableMap::new(Prefix::IterableMap),
+            burn_log: Vector::new(Prefix::BurnLog),
+            paid_burn_fee: Vector::new(b"p"),
         }
     }
 
     #[payable]
-    pub fn mint(&mut self,token_id: TokenId, token_metadata: TokenMetadata) -> Token {
+    pub fn mint(&mut self, token_id: TokenId, token_metadata: TokenMetadata) -> Token {
         let sender = env::signer_account_id();
 
-        
         let nft = NftData {
             id: self.item_counter,
             owner: sender.clone(),
@@ -102,26 +118,58 @@ impl Contract {
         self.nfts.push(nft.clone());
         self.tokens.internal_mint(token_id.clone(), sender, Some(token_metadata))
     }
+
+    #[payable]
+    pub fn pay_burn_fee(&mut self) {
+        assert!(
+            env::attached_deposit() >= NearToken::from_yoctonear(BURN_FEE),
+            "Please attach at least 0.001 NEAR as a burn fee."
+        );
+        
+        let sender = env::signer_account_id();
+        if !self.paid_burn_fee.iter().any(|acc| *acc == sender) {
+            self.paid_burn_fee.push(sender.clone());
+        }
+    }
     
     #[payable]
     pub fn burn(&mut self, index: U64) {
         let owner_id = env::signer_account_id();
-    
+
+        assert!(
+            self.paid_burn_fee.iter().any(|acc| *acc == owner_id),
+            "Burn fee has not been paid. Please call `pay_burn_fee` first."
+        );
+
+
         let nft_data = self.nfts.get(index.0 as u32).expect("NFT not found.");
         assert_eq!(&nft_data.owner, &owner_id, "You do not own this token.");
-    
+        
         let zero_address: AccountId = "0000000000000000000000000000000000000000".parse().expect("Invalid burn address");
-    
+
         self.tokens.nft_transfer(zero_address.clone(), nft_data.token_id.clone(), None, None);
-    
+
         let mut updated_nft_data = nft_data.clone(); 
         updated_nft_data.owner = zero_address;
         updated_nft_data.data = None;
-    
+
+        
+        let burn_log_entry = BurnLog {
+            owner: owner_id.clone(),
+            token_id: nft_data.token_id.clone(),
+            token_name: nft_data.data.as_ref().and_then(|meta| meta.title.clone()),
+            timestamp: env::block_timestamp(),
+        };
+        
+        self.burn_log.push(burn_log_entry); 
         self.nfts.replace(index.0 as u32, updated_nft_data);
+
+        if let Some(pos) = self.paid_burn_fee.iter().position(|acc| *acc == owner_id) {
+            self.paid_burn_fee.swap_remove(pos.try_into().unwrap());
+        }
     }
     
-    pub fn get_index(&self, token_id:TokenId) -> U64 {
+    pub fn get_index(&self, token_id: TokenId) -> U64 {
         self.token_iterable[&token_id]
     }
     
@@ -129,13 +177,21 @@ impl Contract {
         self.item_counter
     }
 
-    pub fn get_nft(&self, index:U64) -> Option<NftData> {
+    pub fn get_nft(&self, index: U64) -> Option<NftData> {
         self.nfts.get(index.0 as u32).cloned()
     }
 
     pub fn get_owner_of_contract(&self) -> AccountId {
         self.owner.clone()
     }
+
+    pub fn get_burn_log(&self) -> Vec<BurnLog> {
+        (0..self.burn_log.len())
+            .filter_map(|index| self.burn_log.get(index))
+            .cloned() 
+            .collect()
+    }
+    
 }
 
 near_contract_standards::impl_non_fungible_token_core!(Contract, tokens);
@@ -148,4 +204,3 @@ impl NonFungibleTokenMetadataProvider for Contract {
         self.metadata.get().unwrap()
     }
 }
-
