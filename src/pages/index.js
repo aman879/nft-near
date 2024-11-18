@@ -151,6 +151,8 @@ const showToastAndWait = async (message) => {
     try {
       const depositAmount = BigInt(1);
       const BurnFee = BigInt(1000000000000000000000);
+
+      await showToastAndWait(`A fee of 0.001 will be deducted for Burn Fee`);
       
       await wallet.callMethod({
         contractId: CONTARCT,
