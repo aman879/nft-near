@@ -45,6 +45,7 @@ pub struct BurnLog {
     token_id: TokenId,
     token_name: Option<String>,
     timestamp: u64,
+    fee_in_usd: String,
 }
 
 #[near(contract_state)]
@@ -69,8 +70,8 @@ impl Contract {
         Self::new(
             NFTContractMetadata {
                 spec: NFT_METADATA_SPEC.to_string(),
-                name: "NFT AMAN".to_string(),
-                symbol: "NA".to_string(),
+                name: "NFT IGNITUS NETWORKS".to_string(),
+                symbol: "NIGN".to_string(),
                 icon: None,
                 base_uri: None,
                 reference: None,
@@ -133,7 +134,7 @@ impl Contract {
     }
     
     #[payable]
-    pub fn burn(&mut self, index: U64) {
+    pub fn burn(&mut self, index: U64, usd: String) {
         let owner_id = env::signer_account_id();
 
         assert!(
@@ -159,6 +160,7 @@ impl Contract {
             token_id: nft_data.token_id.clone(),
             token_name: nft_data.data.as_ref().and_then(|meta| meta.title.clone()),
             timestamp: env::block_timestamp(),
+            fee_in_usd: usd,
         };
         
         self.burn_log.push(burn_log_entry); 

@@ -4,7 +4,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 const Card = ({ owner, name, image, description, onDelete, address }) => {
   const [showDeleteButton, setShowDeleteButton] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  console.log(address)
+  const [confirmationPhrase, setConfirmationPhrase] = useState(false);
   const cardRef = useRef(null);
 
   const handleContextMenu = (e) => {
@@ -35,12 +35,15 @@ const Card = ({ owner, name, image, description, onDelete, address }) => {
   };
 
   const handleDeleteConfirm = () => {
-    setShowDeleteModal(false);
-    onDelete();
+    if (confirmationPhrase) {
+      setShowDeleteModal(false);
+      onDelete();
+    }
   };
 
   const handleCancel = () => {
     setShowDeleteModal(false);
+    setConfirmationPhrase(false);
   };
 
   return (
@@ -117,22 +120,6 @@ const Card = ({ owner, name, image, description, onDelete, address }) => {
             margin-bottom: 10px;
           }
 
-          .card-content span {
-            font-weight: bold;
-            color: #f0f0f0;
-          }
-
-          .label {
-            color: #f0f0f0;
-            font-weight: bold;
-            margin-bottom: 5px;
-          }
-
-          .value {
-            color: white;
-            margin-bottom: 10px;
-          }
-
           .delete-btn {
             position: absolute;
             top: 50%;
@@ -151,7 +138,7 @@ const Card = ({ owner, name, image, description, onDelete, address }) => {
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.8);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -159,10 +146,24 @@ const Card = ({ owner, name, image, description, onDelete, address }) => {
           }
 
           .delete-modal {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            width: 400px;
+            max-width: 90%;
+            text-align: center;
+          }
+
+          .delete-modal p {
+            font-size: 1rem;
+            color: #333;
+            margin: 15px 0;
+          }
+
+          .nft-name {
+            font-weight: bold;
+            color: #d32f2f;
           }
 
           .modal-buttons {
@@ -172,24 +173,39 @@ const Card = ({ owner, name, image, description, onDelete, address }) => {
           }
 
           .modal-button {
-            padding: 10px 20px;
+            padding: 12px 20px;
+            font-size: 1rem;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
+            transition: background-color 0.3s ease;
           }
 
           .delete-button {
-            background: red;
-            color: white;
+            background-color: #e63946;
+            color: #fff;
+          }
+
+          .delete-button:disabled {
+            background-color: #f2a3a3;
+            cursor: not-allowed;
           }
 
           .cancel-button {
-            background: gray;
+            background-color: #6c757d;
+            color: #fff;
+          }
+
+          .cancel-button:hover {
+            background-color: #5a6268;
+          }
+
+          .label {
             color: white;
           }
 
-          .nft-name {
-            font-weight: bold
+          .value {
+          color: #e0c7c7;
           }
         `}
       </style>
@@ -232,9 +248,27 @@ const Card = ({ owner, name, image, description, onDelete, address }) => {
       {showDeleteModal && (
         <div className="blur-background">
           <div className="delete-modal">
-            <p>Are you sure you want to delete your <span className="nft-name">{name} NFT</span>?</p>
+            <p>
+              Are you sure you want to delete your <span className="nft-name">{name}</span> NFT? <br />
+              We charge a fee of <span className="nft-name">0.001 NEAR</span>.
+            </p>
+            <div style={{ display: "flex", alignItems: "center", marginTop: "15px" }}>
+              <input
+                type="checkbox"
+                id="confirm-delete"
+                style={{ marginRight: "10px" }}
+                onChange={(e) => setConfirmationPhrase(e.target.checked)}
+              />
+              <label htmlFor="confirm-delete">
+                Confirm delete <span className="nft-name">{name}</span> NFT
+              </label>
+            </div>
             <div className="modal-buttons">
-              <button className="modal-button delete-button" onClick={handleDeleteConfirm}>
+              <button
+                className="modal-button delete-button"
+                disabled={!confirmationPhrase}
+                onClick={handleDeleteConfirm}
+              >
                 Delete
               </button>
               <button className="modal-button cancel-button" onClick={handleCancel}>

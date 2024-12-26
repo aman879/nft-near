@@ -1,7 +1,12 @@
 const contractPerNetwork = {
   mainnet: ' ',
-  testnet: 'nft-contract-near-burn.testnet',
+  testnet: 'near-ign-nft.testnet',
 };
+
+const oraclePrice = {
+  mainnet: ' ',
+  testnet: 'priceoracle.testnet'
+}
 
 // Chains for EVM Wallets 
 const evmWalletChains = {
@@ -21,4 +26,5 @@ const evmWalletChains = {
 
 export const NetworkId = 'testnet';
 export const NftNearContract = contractPerNetwork[NetworkId];
+export const PriceOracle = oraclePrice[NetworkId];
 export const EVMWalletChain = evmWalletChains[NetworkId];

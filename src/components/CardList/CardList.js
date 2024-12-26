@@ -21,7 +21,7 @@ const CardList = ({ userNFTs, deleteNFT, address }) => {
     return (
         <div>
             {userNFTs.length === 0 ? (
-                <p>No NFTs found.</p>
+                <p className="text-white">No NFTs found.</p>
             ) : (
                 <div className="row row-cols-1 row-cols-md-2 g-4 pb-5">
                     {cardComponents}

@@ -5,12 +5,13 @@ import { PinataSDK } from 'pinata-web3';
 import Mint from '@/components/Mint/Mint';
 import { Navbar } from '@/components/Navbar/Navbar';
 import { NearContext} from '@/wallets/near';
-import { NftNearContract } from '../config';
+import { NftNearContract, PriceOracle } from '../config';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Explore from '@/components/Explore/Explore';
 
 const CONTARCT = NftNearContract;
+const PRICE_CONTRACT = PriceOracle;
 
 const pinata = new PinataSDK({
     pinataJwt: jws.jws,
@@ -152,7 +153,18 @@ const showToastAndWait = async (message) => {
       const depositAmount = BigInt(1);
       const BurnFee = BigInt(1000000000000000000000);
 
-      await showToastAndWait(`A fee of 0.001 will be deducted for Burn Fee`);
+      const priceResponse = await wallet.viewMethod({
+        contractId: PRICE_CONTRACT,
+        method: "get_price_data",
+      });
+
+      const prices = priceResponse.prices;
+      const value = prices.filter(price => price.asset_id === "wrap.testnet");
+      
+      const price_of_1_Near = (value[0].price.multiplier / (10 ** value[0].price.decimals)) * (10 ** 24);
+      const fee_price = 0.001 * price_of_1_Near;
+
+      await showToastAndWait(`A fee of 0.001 (${fee_price} USD) will be deducted for Burn Fee`);
       
       await wallet.callMethod({
         contractId: CONTARCT,
@@ -167,6 +179,7 @@ const showToastAndWait = async (message) => {
           method: 'burn',
           args: {
               index: id,
+              usd: fee_price.toString(),
           },
           deposit: depositAmount.toString()
       });
