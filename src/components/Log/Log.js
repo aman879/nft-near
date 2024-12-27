@@ -64,7 +64,7 @@ const Log = ({ log, isLogLoading, isConnected }) => {
                 ))}
               </div>
             ) : (
-              <p>No logs found for "{searchTerm}".</p>
+              <p>No logs found for - {searchTerm}.</p>
             )}
           </div>
         )
