@@ -9,6 +9,7 @@ import { NftNearContract, PriceOracle } from '../config';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Explore from '@/components/Explore/Explore';
+import Log from '@/components/Log/Log';
 
 const CONTARCT = NftNearContract;
 const PRICE_CONTRACT = PriceOracle;
@@ -25,6 +26,8 @@ const IndexPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [shouldFetchNfts, setShouldFetchNfts] = useState(false);
     const [nfts, setNfts] = useState([]);
+    const [isLogLoading, setIsLogLoading] = useState(false);
+    const [log, setLog] = useState([]);
 
     useEffect(() => {
         if(signedAccountId) {
@@ -35,36 +38,68 @@ const IndexPage = () => {
     }, [signedAccountId])
 
     useEffect(() => {
-        async function getAllNFTs() {
-          if (connected && signedAccountId) { 
-            try {
-              setIsLoading(true);
-              const count = await wallet.viewMethod({contractId: CONTARCT, method: "get_total_count"});    
-              const nfts = [];
-    
-              for(let i =0; i<count; i++ ){
-                const i_string = String(i);
-                const tx = await wallet.viewMethod({contractId: CONTARCT, method: "get_nft", args: {index: i_string}});
-                if(tx.data) {
-                  console.log(tx)
-                  nfts.push(tx);
-                }
+      async function getAllNFTs() {
+        if (connected && signedAccountId) { 
+          try {
+            setIsLoading(true);
+            const count = await wallet.viewMethod({contractId: CONTARCT, method: "get_total_count"});    
+            const nfts = [];
+  
+            for(let i =0; i<count; i++ ){
+              const i_string = String(i);
+              const tx = await wallet.viewMethod({contractId: CONTARCT, method: "get_nft", args: {index: i_string}});
+              if(tx.data) {
+                console.log(tx)
+                nfts.push(tx);
               }
-              setNfts(nfts);
-              setShouldFetchNfts(false);
-              setIsLoading(false);
-            } catch (error) {
-              console.error('Error fetching NFTs:', error);
-              toast.error("Error fetching NFTs", {
-                position: "top-center"
-              })
             }
+            setNfts(nfts);
+            setShouldFetchNfts(false);
+            setIsLoading(false);
+          } catch (error) {
+            console.error('Error fetching NFTs:', error);
+            toast.error("Error fetching NFTs", {
+              position: "top-center"
+            })
           }
         }
-        getAllNFTs();
-      }, [shouldFetchNfts, connected, signedAccountId]);
+      }
+      getAllNFTs();
+    }, [shouldFetchNfts, connected, signedAccountId]);
 
+    useEffect(() => {
+      async function getBurnLog() {
+        if(connected && signedAccountId) {
+          try {
+            setIsLogLoading(true);
 
+            const log = await wallet.viewMethod({contractId: CONTARCT, method: "get_burn_log"});
+            
+            function convertToIST(timestamp) {
+              const timestampMilliSec = Math.floor(timestamp / 1_000_000);
+              const date = new Date(timestampMilliSec);
+              return date
+            }
+
+            const formatLog = log.map(entry => ({
+              ...entry,
+              timestamp: convertToIST(entry.timestamp),
+            }));
+
+            setLog(formatLog);
+          } catch (e) {
+            console.log("error", e);
+            toast.error("Error getting burn log", {
+              position: 'top-center'
+            })
+          } finally {
+            setIsLogLoading(false);
+          }
+        }
+      }
+
+      getBurnLog();
+    }, [connected, signedAccountId])
   const onRouteChange = (route) => {
     setRoute(route);
   };
@@ -195,6 +230,7 @@ const showToastAndWait = async (message) => {
     }
   }
 
+
   return (
     <>
         <ToastContainer />
@@ -205,6 +241,8 @@ const showToastAndWait = async (message) => {
                 <Explore nfts={nfts} isConnected={connected} isLoading={isLoading} deleteNFT={deleteNFT} address={signedAccountId}/>
             ) : route === "mint" ? (
                 <Mint uploadToPinata={uploadToPinata} mintNFT={mintNFTs} />
+            ) : route == "log" ? (
+                <Log log={log} isLogLoading={isLogLoading} isConnected={connected}/>
             ) : (
                 <>Cannot find page</>
             )

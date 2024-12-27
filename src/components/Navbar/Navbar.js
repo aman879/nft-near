@@ -48,6 +48,11 @@ export const Navbar = ({onRouteChange}) => {
                 Mint
               </a>
             </li>
+            <li className="nav-item">
+              <a className="nav-link" onClick={() => onRouteChange("log")}>
+                Burn Log
+              </a>
+            </li>
           </ul>
           <button
             type="button"
